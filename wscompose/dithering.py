@@ -8,7 +8,7 @@ __date__       = "$Date: 2008/01/04 06:23:46 $"
 __copyright__  = "Copyright (c) 2007-2008 Aaron Straup Cope. BSD license : http://www.modestmaps.com/license."
 
 import wscompose
-import Image
+import PIL.Image as Image
 
 # DEPRECATED
 # TO BE REBLESSED AS A PROPER PROVIDER
@@ -19,11 +19,11 @@ class handler (wscompose.handler) :
 
         img = wscompose.handler.draw_map(self)
         return self.atkinson_dithering(img)
-    
+
     #
     # http://mike.teczno.com/notes/atkinson.html
     #
-    
+
     def atkinson_dithering(self, img) :
 
         img = img.convert('L')
@@ -36,9 +36,9 @@ class handler (wscompose.handler) :
                 old = img.getpixel((x, y))
                 new = threshold[old]
                 err = (old - new) >> 3 # divide by 8
-            
+
                 img.putpixel((x, y), new)
-        
+
                 for nxy in [(x+1, y), (x+2, y), (x-1, y+1), (x, y+1), (x+1, y+1), (x, y+2)]:
                     try:
                         img.putpixel(nxy, img.getpixel(nxy) + err)

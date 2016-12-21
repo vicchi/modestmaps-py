@@ -8,18 +8,18 @@ __date__       = "$Date: 2008/01/04 06:23:46 $"
 __copyright__  = "Copyright (c) 2007-2008 Aaron Straup Cope. BSD license : http://www.modestmaps.com/license."
 
 import wscompose
-import convexhull
+import wscompose.convexhull as convexhull
 
 import wscompose.plotting
 import wscompose.dithering
 
 import re
 import urllib
-import Image
-import ImageDraw
+import PIL.Image as Image
+import PIL.ImageDraw as ImageDraw
 import StringIO
 import ModestMaps
-import validate
+import wscompose.validate as validate
 
 # TO DO (patches are welcome) :
 #
@@ -44,25 +44,25 @@ class handler (wscompose.plotting.handler, wscompose.dithering.handler) :
 
         if self.ctx.has_key('hulls') :
             img = self.draw_convex_hulls(img)
-            
+
         #
-        
+
         if self.ctx.has_key('dots') :
             img = self.draw_dots(img)
 
         #
-        
+
         if self.ctx.has_key('markers') :
 
             self.reposition_markers()
-            
+
             if self.ctx.has_key('bleed') :
-                img = self.draw_markers_with_bleed(img)                
+                img = self.draw_markers_with_bleed(img)
             else :
-                img = self.draw_markers(img)            
+                img = self.draw_markers(img)
 
         #
-        
+
         return img
 
     # ##########################################################
@@ -70,11 +70,11 @@ class handler (wscompose.plotting.handler, wscompose.dithering.handler) :
     def send_x_headers (self, img) :
 
         wscompose.handler.send_x_headers(self, img)
-        
+
         if self.ctx.has_key('markers') :
-            
+
             for mrk_data in self.ctx['markers'] :
-            
+
                 # The first two numbers are the x/y coordinates for the lat/lon.
                 # The second two are the x/y coordinates of the top left corner
                 # where the actual pinwin content should be pasted. The last pair
@@ -84,11 +84,11 @@ class handler (wscompose.plotting.handler, wscompose.dithering.handler) :
                 details = (mrk_data['x'], mrk_data['y'],
                            mrk_data['x_fill'], mrk_data['y_fill'],
                            mrk_data['width'], mrk_data['height'])
-                
+
                 details = map(str, details)
                 header = "X-wscompose-Marker-%s" % mrk_data['label']
                 sep = ","
-                
+
                 self.send_header(header, sep.join(details))
 
         #
@@ -100,9 +100,9 @@ class handler (wscompose.plotting.handler, wscompose.dithering.handler) :
 
                 header = "X-wscompose-Dot-%s" % data['label']
                 coords = "%s,%s,%s" % (int(pt.x), int(pt.y), int(data['radius']))
-                
+
                 self.send_header(header, coords)
-        
+
     # ##########################################################
 
     def draw_polylines (self, img) :
@@ -113,16 +113,16 @@ class handler (wscompose.plotting.handler, wscompose.dithering.handler) :
         return img
 
     # ##########################################################
-    
+
     def draw_polyline (self, img, poly) :
-        
+
         dr = ImageDraw.Draw(img)
         cnt = len(poly)
         i = 0
 
         grey = (42, 42, 42)
-        
-        while i < cnt : 
+
+        while i < cnt :
 
             j = i + 1
 
@@ -130,15 +130,15 @@ class handler (wscompose.plotting.handler, wscompose.dithering.handler) :
                 break
 
             cur = self.latlon_to_point(poly[i]['latitude'], poly[i]['longitude'])
-            next = self.latlon_to_point(poly[j]['latitude'], poly[j]['longitude'])            
+            next = self.latlon_to_point(poly[j]['latitude'], poly[j]['longitude'])
 
             dr.line((cur.x, cur.y, next.x, next.y), fill=grey, width=4)
             i += 1
 
         #
-                
+
         return img
-            
+
     # ##########################################################
 
     def draw_convex_hulls(self, img) :
@@ -151,24 +151,24 @@ class handler (wscompose.plotting.handler, wscompose.dithering.handler) :
 
             # sigh...
             key = "%ss" % type
-            
-            for coord in self.ctx[key] : 
-                pt = self.latlon_to_point(coord['latitude'], coord['longitude'])    
+
+            for coord in self.ctx[key] :
+                pt = self.latlon_to_point(coord['latitude'], coord['longitude'])
                 points.append((pt.x, pt.y))
 
             hull = convexhull.convexHull(points)
-            
+
             #
             # no way to assign width to polygon outlines in PIL...
             #
-            
+
             pink = (255, 0, 132)
             cnt = len(hull)
             i = 0
 
-            while i < cnt : 
+            while i < cnt :
                 (x1, y1) = hull[i]
-                
+
                 j = i + 1
 
                 if j == cnt :
@@ -180,14 +180,14 @@ class handler (wscompose.plotting.handler, wscompose.dithering.handler) :
                 i += 1
 
         return img
-    
+
     # ##########################################################
-    
+
     # To do : move this code in to methods that can be run
     # easily from unit tests and/or CLI tools...
-    
+
     def draw_markers_with_bleed (self, img) :
-            
+
         bleed_top = 0
         bleed_right = 0
         bleed_bottom = 0
@@ -201,22 +201,22 @@ class handler (wscompose.plotting.handler, wscompose.dithering.handler) :
             bleed_right = max(bleed_right, right)
             bleed_bottom = max(bleed_bottom, bottom)
             bleed_left = min(bleed_left, left)
-            
+
             # print "%s : top: %s, right: %s, bottom: %s, left: %s" % (data['label'], bleed_top, bleed_right, bleed_bottom, bleed_left)
-            
+
         #
-        
-        if bleed_top : 
+
+        if bleed_top :
             bleed_top -= bleed_top * 2
-            
+
         if bleed_left :
             bleed_left -= bleed_left * 2
-            
+
         #
-        
+
         bleed_x = bleed_left
         bleed_y = bleed_top
-        
+
         if bleed_top or bleed_right :
 
             old = img.copy()
@@ -227,16 +227,16 @@ class handler (wscompose.plotting.handler, wscompose.dithering.handler) :
 
             # print "new x: %s y: %s" % (x, y)
             # print "paste x: %s y: %s" % (bleed_x, bleed_y)
-            
+
             img = Image.new('RGB', (x, y), 'white')
             img.paste(old, (bleed_x, bleed_y))
-            
+
         #
 
         if self.ctx['shadows'] :
             for data in self.ctx['markers'] :
                 self.draw_shadow(img, data, bleed_x, bleed_y)
-        
+
         for data in self.ctx['markers'] :
             self.draw_marker(img, data, bleed_x, bleed_y)
 
@@ -249,15 +249,15 @@ class handler (wscompose.plotting.handler, wscompose.dithering.handler) :
         w = mrk_data['width']
         h = mrk_data['height']
         a = mrk_data['adjust_cone_height']
-        
+
         mrk = self.load_marker(w, h, a)
         mrk_sz = mrk.fh().size
-        
+
         loc = ModestMaps.Geo.Location(mrk_data['latitude'], mrk_data['longitude'])
-        pt = self.ctx['map'].locationPoint(loc)            
+        pt = self.ctx['map'].locationPoint(loc)
 
         #
-        
+
         mrk_data['x'] = int(pt.x)
         mrk_data['y'] = int(pt.y)
 
@@ -275,15 +275,15 @@ class handler (wscompose.plotting.handler, wscompose.dithering.handler) :
         if self.ctx['shadows'] :
             right = (mx + mrk_sz[0]) - img.size[0]
         else :
-            
+
             im_w = img.size[0]
             test = mrk_data['x']  + (mrk.canvas_w - int(mrk.pt_x))
-            
+
             if test > im_w :
                 right = test - im_w
 
         #
-        
+
         left = mx
         bottom = my + mrk_sz[1] - img.size[1]
 
@@ -293,12 +293,12 @@ class handler (wscompose.plotting.handler, wscompose.dithering.handler) :
     # ##########################################################
 
     def draw_marker (self, img, mrk_data, bleed_x=0, bleed_y=0) :
-        
+
         #
         # Dirty... hack to account for magic
         # center/zoom markers...
         #
-        
+
         if mrk_data.has_key('fill') and mrk_data['fill'] == 'center' :
             if self.ctx['method'] == 'center' :
                 mrk_data['latitude'] = self.ctx['latitude']
@@ -306,7 +306,7 @@ class handler (wscompose.plotting.handler, wscompose.dithering.handler) :
             else :
                 offset_lat = (self.ctx['bbox'][2] - self.ctx['bbox'][0]) / 2
                 offset_lon = (self.ctx['bbox'][3] - self.ctx['bbox'][1]) / 2
-            
+
                 mrk_data['latitude'] = self.ctx['bbox'][0] + offset_lat
                 mrk_data['longitude'] = self.ctx['bbox'][1] + offset_lon
 
@@ -315,7 +315,7 @@ class handler (wscompose.plotting.handler, wscompose.dithering.handler) :
         #
         # Magic global fill in with a map hack
         #
-        
+
         if self.ctx.has_key('fill') :
             mrk_data['fill'] = 'center'
             mrk_data['provider'] = self.ctx['fill']
@@ -333,40 +333,40 @@ class handler (wscompose.plotting.handler, wscompose.dithering.handler) :
         if self.ctx.has_key('fill') :
             # add centering dot
             # (flickr pink)
-        
+
             pink = (255, 0, 132)
 
             (w, h) = fill.size
-        
+
             h = h / 2
             w = w / 2
-            
+
             x1 = int(w - 5)
             x2 = int(w + 5)
             y1 = int(h - 5)
             y2 = int(h + 5)
-            
-            dr = ImageDraw.Draw(fill)        
+
+            dr = ImageDraw.Draw(fill)
             dr.ellipse((x1, y1, x2, y2), outline=pink)
-            
+
         # the offset to paste the filler content
-        
+
         dx = mrk_data['x_fill']
         dy = mrk_data['y_fill']
 
         img.paste(fill, (dx, dy))
         return True
-    
+
     # ##########################################################
 
     # share me with marker.py or add shapes.py (or something) ?
-    
+
     def draw_dots (self, img) :
 
         dr = ImageDraw.Draw(img)
         pink = (255, 0, 132)
         grey = (42, 42, 42)
-        
+
         for data in self.ctx['dots'] :
 
             pt = self.latlon_to_point(data['latitude'], data['longitude'])
@@ -378,16 +378,16 @@ class handler (wscompose.plotting.handler, wscompose.dithering.handler) :
             y2 = pt.y + offset
 
             dr.ellipse((x1 + 1 , y1 + 2, x2 + 1, y2 + 2), fill=grey)
-            dr.ellipse((x1, y1, x2, y2), fill=pink)            
+            dr.ellipse((x1, y1, x2, y2), fill=pink)
 
         return img
-    
+
     # ##########################################################
-    
+
     def fetch_marker_fill (self, mrk_data) :
-        
+
         if mrk_data.has_key('fill') and mrk_data['fill'] == 'center' :
-                
+
             args = {'height': mrk_data['height'],
                     'width' : mrk_data['width'],
                     'latitude' : mrk_data['latitude'],
@@ -400,25 +400,25 @@ class handler (wscompose.plotting.handler, wscompose.dithering.handler) :
 
             if host == '' :
                 host = "127.0.0.1"
-                
+
             params = urllib.urlencode(args)
-            
+
             url = "http://%s:%s?%s" % (host, port, params)
-            
+
         else :
             url = mrk_data['fill']
-            
+
         #
-        
+
         data = urllib.urlopen(url).read()
-        return Image.open(StringIO.StringIO(data)).convert('RGBA')        
-    
+        return Image.open(StringIO.StringIO(data)).convert('RGBA')
+
     # ##########################################################
 
     def validate_params (self, params) :
 
         valid = wscompose.handler.validate_params(self, params)
-        
+
         if not valid :
             return False
 
@@ -441,12 +441,12 @@ class handler (wscompose.plotting.handler, wscompose.dithering.handler) :
         #
         # magic!
         #
-        
+
         if params.has_key('fill') :
 
             re_provider = re.compile(r"^(YAHOO|MICROSOFT)_(ROAD|HYBRID|AERIAL)$")
             re_num = re.compile(r"^\d+$")
-                
+
             if not re_provider.match(params['fill'][0].upper()) :
                 self.error(102, "Not a valid marker provider")
                 return False
@@ -454,13 +454,13 @@ class handler (wscompose.plotting.handler, wscompose.dithering.handler) :
             valid['fill'] = unicode(params['fill'][0].upper())
 
             if params.has_key('fill_accuracy') :
-                
+
                 if not re_num.match(params['fill_accuracy'][0]) :
                     self.error(102, "Not a valid number %s" % 'accuracy')
                     return False
 
                 valid['fill_zoom'] = float(params['fill_accuracy'])
-                
+
             else :
                 valid['fill_zoom'] = 15
 
@@ -468,19 +468,19 @@ class handler (wscompose.plotting.handler, wscompose.dithering.handler) :
 
         if params.has_key('bleed') :
             valid['bleed'] = True
-            
+
         #
 
         if params.has_key('filter') :
 
             valid_filters = ('atkinson')
-            
+
             if not params['filter'][0] in valid_filters :
                 self.error(104, "Not a valid marker filter")
                 return False
 
             valid['filter'] = params['filter'][0]
-            
+
         #
         # dots
         #
@@ -525,15 +525,15 @@ class handler (wscompose.plotting.handler, wscompose.dithering.handler) :
             valid['shadows'] = False
         else :
             valid['shadows'] = True
-            
+
         #
         # Happy happy
         #
-        
+
         return valid
 
     # ##########################################################
-    
+
     def help_synopsis (self) :
         self.help_para("ws-pinwin.py - an HTTP interface to the ModestMaps map tile composer with support for rendering and plotting markers.\n\n")
 
@@ -552,30 +552,30 @@ class handler (wscompose.plotting.handler, wscompose.dithering.handler) :
         self.help_option('dot', 'Draw a pinwin-style dot (but not the marker) at a given point. You may pass multiple dot arguments, each of which should contain the following comma separated values :', False)
         self.help_option('label', 'A unique string to identify the dot by', True, 1)
         self.help_option('point', 'A comma-separated string containing the latitude and longitude indicating the point where the dot should be placed', True, 1)
-        self.help_option('radius', 'The radius, in pixels, of the dot - the default is 18', False, 1)    
+        self.help_option('radius', 'The radius, in pixels, of the dot - the default is 18', False, 1)
 
         self.help_option('marker', 'Draw a pinwin-style marker at a given point. You may pass multiple marker arguments, each of which should contain the following comma separated values :', False)
         self.help_option('label', 'A unique string to identify the marker by', True, 1)
         self.help_option('point', 'A comma-separated string containing the latitude and longitude indicating the point where the marker should be placed', True, 1)
-        self.help_option('dimensions', 'A comma-separated string containing the height and width of the marker canvas - the default is 75 x 75', False, 1)   
+        self.help_option('dimensions', 'A comma-separated string containing the height and width of the marker canvas - the default is 75 x 75', False, 1)
 
         self.help_option('polyline', 'Draw a polyline on the map. Polylines are passed as multiple coordinates (comma-separated latitude and longitude pairs) each separated by a single space. You may pass multiple \'polyline\' arguments. This option is currently experimental and arguments may change.', False)
 
         self.help_option('convex', 'Draw a polyline representing the convex hull of a collection of points passed in the \'marker\', \'dot\' or \'plot\' arguments (see above). Valid options are, not surprisingly : \'marker\', \'dot\' or \'plot\'; you may pass multiple \'convex\' arguments. This option is currently experimental and arguments may change.', False)
-        
+
         self.help_option('fill', 'A helper argument which if present will cause each marker specified to be filled with the contents of map for the marker\'s coordinates at zoom level 15. The value should be a valid ModestMaps map tile provider.', False)
-        
+
         self.help_option('adjust', 'Adjust the size of the bounding box argument by (n) kilometers; you may want to do this if you have markers positioned close to the sides of your bounding box', False)
         self.help_option('bleed', 'If true, the final image will be enlarged to ensure that all marker canvases are not clipped', False)
         self.help_option('noshadow', 'Do not draw shadows for pinwin markers', False)
-        
+
         self.help_option('filter', 'Filter the map image before any markers are applied. Valid options are :', False)
-        self.help_option('atkinson', 'Apply the Atkinson dithering algorithm to the map image', False, 1)        
+        self.help_option('atkinson', 'Apply the Atkinson dithering algorithm to the map image', False, 1)
 
     # ##########################################################
 
     def help_notes (self) :
-        self.help_header("Notes")        
+        self.help_header("Notes")
         self.help_para("The shadows for the markers are stylized by design; especially when they have been repositioned and have very long stems. Not only do they look funny, I've decided I like that they look funny.")
         self.help_para("\"Proper\" shadows rendered in correct perspective are on the list and if you want to help me with the math then they be added sooner still.")
 
@@ -586,7 +586,7 @@ class handler (wscompose.plotting.handler, wscompose.dithering.handler) :
 
         self.help_para("Metadata about an image is returned in HTTP headers prefixed with 'X-wscompose-'.")
         self.help_para("For example : ")
-        
+
         self.help_pre("""	HTTP/1.x 200 OK
         Server: BaseHTTP/0.3 Python/2.5
         Date: Sun, 13 Jan 2008 01:08:37 GMT
@@ -609,5 +609,5 @@ class handler (wscompose.plotting.handler, wscompose.dithering.handler) :
 
         self.help_para("'X-wscompose-dot-' headers return x and y coordinates followed by the dot's radius, in pixels")
         self.help_para("'X-wscompose-plot-' headers return only x and y coordinates")
-        
+
     # ##########################################################
