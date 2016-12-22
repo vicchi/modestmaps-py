@@ -1,4 +1,3 @@
-__package__    = "wscompose/convexhull.py"
 __version__    = "1.0"
 __author__     = "Aaron Straup Cope"
 __url__        = "http://www.aaronland.info/python/wscompose"
@@ -9,7 +8,7 @@ __copyright__  = "Copyright (c) 2007-2008 Aaron Straup Cope. BSD license : http:
 
 """convexhull.py
 
-Calculate the convex hull of a set of n 2D-points in O(n log n) time.  
+Calculate the convex hull of a set of n 2D-points in O(n log n) time.
 Taken from Berg et al., Computational Geometry, Springer-Verlag, 1997.
 Prints output as EPS file.
 
@@ -52,7 +51,7 @@ def _isRightTurn((p, q, r)):
     "Do the vectors pq:qr form a right turn, or not?"
 
     # assert p != q and q != r and p != r
-            
+
     if _myDet(p, q, r) < 0:
 	return 1
     else:
@@ -66,14 +65,14 @@ def _isPointInPolygon(r, P):
     for i in xrange(len(P[:-1])):
         p, q = P[i], P[i+1]
         if not _isRightTurn((p, q, r)):
-            return 0 # Out!        
+            return 0 # Out!
 
     return 1 # It's within!
 
 
 def _makeRandomData(numPoints=10, sqrLength=100, addCornerPoints=0):
     "Generate a list of random points within a square."
-    
+
     # Fill a square with random points.
     min, max = 0, sqrLength
     P = []
@@ -117,7 +116,7 @@ newpath                 %% open page
 
 def saveAsEps(P, H, boxSize, path):
     "Save some points and their convex hull into an EPS file."
-    
+
     # Save header.
     f = open(path, 'w')
     f.write(epsHeader % (0, 0, boxSize, boxSize))
@@ -136,7 +135,7 @@ def saveAsEps(P, H, boxSize, path):
     for p in P:
         f.write("%s r circle\n" % format % p)
         f.write("stroke\n")
-            
+
     # Save footer.
     f.write("\nshowpage\n")
 
@@ -201,7 +200,6 @@ if __name__ == '__main__':
     p = _makeRandomData(numPoints, squareLength, addCornerPoints=0)
 
     print "WTF %s" % p
-    
+
     c = convexHull(p)
     saveAsEps(p, c, squareLength, path)
-

@@ -1,6 +1,5 @@
 # -*-python-*-
 
-__package__    = "wscompose/client.py"
 __version__    = "1.0"
 __author__     = "Aaron Straup Cope"
 __url__        = "http://www.aaronland.info/python/wscompose"
@@ -21,7 +20,7 @@ class httpclient :
         self.__port__ = port
 
     # ##########################################################
-    
+
     def fetch (self, args) :
 
         img = None
@@ -32,7 +31,7 @@ class httpclient :
         endpoint = "/?%s" % params
 
         # maybe always POST or at least add it as an option...
-        
+
         try :
             conn = httplib.HTTPConnection(url)
             conn.request("GET", endpoint)
@@ -46,11 +45,11 @@ class httpclient :
                 errmsg = "(%s) %s" % (res.getheader('x-errorcode'), res.getheader('x-errormessage'))
                 raise Exception, errmsg
             else :
-                raise Exception, res.message   
+                raise Exception, res.message
 
         # fu.PYTHON ...
         re_xheader = re.compile(r"^x-wscompose-", re.IGNORECASE)
-        
+
         for key, value in res.getheaders() :
 
             if re_xheader.match(key) :
@@ -60,20 +59,20 @@ class httpclient :
 
                 major = parts[2]
                 minor = parts[3]
-                
+
                 if not meta.has_key(major) :
                     meta[major] = {}
 
                 meta[major][minor] = value
-                                    
+
         data = res.read()
         conn.close()
 
-        try : 
+        try :
             img = Image.open(StringIO.StringIO(data))
         except Exception, e :
             raise e
-        
+
         return (img, meta)
 
     # ##########################################################

@@ -1,6 +1,5 @@
 # -*-python-*-
 
-__package__    = "wscompose/plotting.py"
 __version__    = "1.0"
 __author__     = "Aaron Straup Cope"
 __url__        = "http://www.aaronland.info/python/wscompose"
